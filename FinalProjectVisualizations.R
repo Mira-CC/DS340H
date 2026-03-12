@@ -13,6 +13,7 @@ library(lubridate)
 library(ggforce)
 library(plotly)
 library(htmlwidgets)
+library(forcats)
 
 setwd("/Users/mirachandriani/Desktop/*WellesleyClasses/DS340H/FinalProject")
 
@@ -169,3 +170,59 @@ plot_2
 
 # Saving plot
 saveWidget(plot_2, "plot2.html")
+
+### Visuals 3 and 4 ############################################################
+
+# Aggregating by month, race, and gender
+gender_race_monthly <- data %>%
+  mutate(
+    race = fct_collapse(race, "Multiracial/Other" = c("Multiracial", "Other")), # combining multiracial and other
+    month = floor_date(tudiarydate, "month")
+  ) %>%
+  group_by(month, tesex, race) %>%
+  summarise(mean_childcare = mean(child_care_duration, na.rm = TRUE),
+            mean_household_task = mean(household_task_duration, na.rm = TRUE),
+            n = n(),
+            .groups = "drop")
+
+# Pivoting wide and calculating child care difference within each race
+childcare_race_diff <- gender_race_monthly %>%
+  select(month, tesex, race, mean_childcare) %>%
+  pivot_wider(names_from = tesex, values_from = mean_childcare) %>%
+  mutate(difference = Female - Male) %>%
+  filter(!is.na(difference)) # dropping month-race combos with only one gender
+
+# Pivoting wide and calculating household task difference within each race
+household_task_race_diff <- gender_race_monthly %>%
+  select(month, tesex, race, mean_household_task) %>%
+  pivot_wider(names_from = tesex, values_from = mean_household_task) %>%
+  mutate(difference = Female - Male) %>%
+  filter(!is.na(difference)) # dropping month-race combos with only one gender
+
+# Plot (child care)
+plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = race)) +
+  geom_line(alpha = 0.4) +
+  geom_smooth(se = FALSE, method = "loess", span = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
+  labs(title = "Gender Gap in Child Care Time by Race Over Time",
+       subtitle = "Positive Values = Mothers Spend More Time",
+       x = "Month",
+       y = "Gender Difference in Daily Child Care Minutes\n(Mother - Father)",
+       color = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
+
+# Plot (household task)
+plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color = race)) +
+  geom_line(alpha = 0.4) +
+  geom_smooth(se = FALSE, method = "loess", span = 0.3) +
+  geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
+  labs(title = "Gender Gap in Time Spent on Household Tasks by Race Over Time",
+       subtitle = "Positive Values = Mothers Spend More Time",
+       x = "Month",
+       y = "Gender Difference in Minutes of Daily Household Tasks\n(Mother - Father)",
+       color = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
