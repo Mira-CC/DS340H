@@ -439,9 +439,9 @@ create_interactive_childcare_map <- function() {
   
   # Create custom diverging color scale - fixed order
   custom_colors <- list(
-    c(0, "blue"),      # Most negative values (males do more)
+    c(0, "#00BFC4"),      # Most negative values (males do more)
     c(0.5, "white"),   # Exactly zero 
-    c(1, "hotpink")    # Most positive values (females do more)
+    c(1, "#F8766D")    # Most positive values (females do more)
   )
   
   # Initialize the plot
@@ -531,3 +531,21 @@ create_interactive_childcare_map <- function() {
 plot_10 <- create_interactive_childcare_map()
 plot_10
 saveWidget(plot_10, file = "plot10.html", selfcontained = TRUE)
+
+### Visual 11 ##################################################################
+
+gender_colors <- c("Female" = "#F8766D", "Male" = "#00BFC4")
+
+plot_11 <- plot(jitter(data$sqrt_child_care_duration, factor = 0.5), 
+                jitter(data$sqrt_household_task_duration, factor = 0.5),
+                col = adjustcolor(gender_colors[data$tesex], alpha.f = 0.5),
+                pch = 16,
+                # cex = 0.7,
+                xlab = "Sqrt Child Care Duration",
+                ylab = "Sqrt Household Task Duration",
+                main = "Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender")
+
+plot_11 <- legend("topright", 
+                  legend = names(gender_colors), 
+                  col = gender_colors,
+                  pch = 16)
