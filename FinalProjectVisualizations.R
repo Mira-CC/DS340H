@@ -175,7 +175,7 @@ saveWidget(plot_2, "plot2.html")
 
 ### Visuals 3 and 4 ############################################################
 
-# Aggregating by month, race, and gender
+# Aggregating by month and gender
 gender_race_monthly <- data %>%
   mutate(
     race = fct_collapse(race, "Multiracial/Other" = c("Multiracial", "Other")), # combining multiracial and other
@@ -186,26 +186,74 @@ gender_race_monthly <- data %>%
             mean_household_task = mean(household_task_duration, na.rm = TRUE),
             n = n(),
             .groups = "drop")
+gender_employed_monthly <- data %>%
+  mutate(month = floor_date(tudiarydate, "month")) %>%
+  group_by(month, tesex, employed) %>%
+  summarise(mean_childcare = mean(child_care_duration, na.rm = TRUE),
+            mean_household_task = mean(household_task_duration, na.rm = TRUE),
+            .groups = "drop")
+gender_income_monthly <- data %>%
+  mutate(month = floor_date(tudiarydate, "month"),
+         income_group = ifelse(income_level %in% c(1, 2, 3), "Income <$100k", "Income >$100k")) %>%
+  group_by(month, tesex, income_group) %>%
+  summarise(mean_childcare = mean(child_care_duration, na.rm = TRUE),
+            mean_household_task = mean(household_task_duration, na.rm = TRUE),
+            .groups = "drop")
 
 # Pivoting wide and calculating child care difference within each race
 childcare_race_diff <- gender_race_monthly %>%
   select(month, tesex, race, mean_childcare) %>%
   pivot_wider(names_from = tesex, values_from = mean_childcare) %>%
   mutate(difference = Female - Male) %>%
-  filter(!is.na(difference)) # dropping month-race combos with only one gender
+  filter(!is.na(difference)) %>% # dropping month-race combos with only one gender
+  filter(race != "Multiracial/Other")
+childcare_employed_diff <- gender_employed_monthly %>%
+  select(month, tesex, employed, mean_childcare) %>%
+  pivot_wider(names_from = tesex, values_from = mean_childcare) %>%
+  mutate(difference = Female - Male,
+         group = ifelse(employed == 1, "Employed", "Unemployed")) %>%
+  filter(!is.na(difference))
+childcare_income_diff <- gender_income_monthly %>%
+  select(month, tesex, income_group, mean_childcare) %>%
+  pivot_wider(names_from = tesex, values_from = mean_childcare) %>%
+  mutate(difference = Female - Male) %>%
+  filter(!is.na(difference))
 
 # Pivoting wide and calculating household task difference within each race
 household_task_race_diff <- gender_race_monthly %>%
   select(month, tesex, race, mean_household_task) %>%
   pivot_wider(names_from = tesex, values_from = mean_household_task) %>%
   mutate(difference = Female - Male) %>%
-  filter(!is.na(difference)) # dropping month-race combos with only one gender
+  filter(!is.na(difference)) %>% # dropping month-race combos with only one gender
+  filter(race != "Multiracial/Other")
+household_employed_diff <- gender_employed_monthly %>%
+  select(month, tesex, employed, mean_household_task) %>%
+  pivot_wider(names_from = tesex, values_from = mean_household_task) %>%
+  mutate(difference = Female - Male,
+         group = ifelse(employed == 1, "Employed", "Unemployed")) %>%
+  filter(!is.na(difference))
+household_income_diff <- gender_income_monthly %>%
+  select(month, tesex, income_group, mean_household_task) %>%
+  pivot_wider(names_from = tesex, values_from = mean_household_task) %>%
+  mutate(difference = Female - Male) %>%
+  filter(!is.na(difference))
+
+# Colors
+race_colors <- c("White" = "#F8766D", "Black" = "#C77CFF", "Asian" = "#0072B2", "Hispanic" = "#009E73")
+employed_colors <- c("Employed" = "#E69F00", "Unemployed" = "#00BFC4")
+income_colors   <- c("Income <$100k" = "#CC79A7", "Income >$100k" = "#FF7F00")
+all_colors <- c(race_colors, employed_colors, income_colors)
 
 # Plot (child care)
 plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = race)) +
   geom_line(alpha = 0.4) +
+  geom_line(data = childcare_employed_diff, aes(x = month, y = difference, color = group), alpha = 0.4) +
+  geom_line(data = childcare_income_diff, aes(x = month, y = difference, color = income_group), alpha = 0.4) +
   geom_smooth(se = FALSE, method = "loess", span = 0.3) +
+  geom_smooth(data = childcare_employed_diff, aes(x = month, y = difference, color = group), se = FALSE, method = "loess", span = 0.3) +
+  geom_smooth(data = childcare_income_diff, aes(x = month, y = difference, color = income_group), se = FALSE, method = "loess", span = 0.3) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  scale_color_manual(values = all_colors) +
   scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
   labs(title = "Gender Gap in Child Care Time by Race Over Time",
        subtitle = "Positive Values = Mothers Spend More Time",
@@ -218,8 +266,13 @@ plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = rac
 # Plot (household tasks)
 plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color = race)) +
   geom_line(alpha = 0.4) +
+  geom_line(data = household_employed_diff, aes(x = month, y = difference, color = group), alpha = 0.4) +
+  geom_line(data = household_income_diff, aes(x = month, y = difference, color = income_group), alpha = 0.4) +
   geom_smooth(se = FALSE, method = "loess", span = 0.3) +
+  geom_smooth(data = household_employed_diff, aes(x = month, y = difference, color = group), se = FALSE, method = "loess", span = 0.3) +
+  geom_smooth(data = household_income_diff, aes(x = month, y = difference, color = income_group), se = FALSE, method = "loess", span = 0.3) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  scale_color_manual(values = all_colors) +
   scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
   labs(title = "Gender Gap in Time Spent on Household Tasks by Race Over Time",
        subtitle = "Positive Values = Mothers Spend More Time",
@@ -355,6 +408,7 @@ make_violin_plot <- function(data, y_var, title, y_label) {
         spanmode = "hard",
         scalemode = "width",
         scalegroup = "all",
+        width = 1,
         fillcolor = adjustcolor(colors[g], alpha.f = 0.7),
         line = list(color = colors[g]),
         points = FALSE,
@@ -534,18 +588,55 @@ saveWidget(plot_10, file = "plot10.html", selfcontained = TRUE)
 
 ### Visual 11 ##################################################################
 
-gender_colors <- c("Female" = "#F8766D", "Male" = "#00BFC4")
+# All years
+plot_11 <- ggplot(data, aes(x = sqrt_child_care_duration, 
+                            y = sqrt_household_task_duration, 
+                            color = tesex)) +
+  geom_point(position = position_jitter(width = 0.1, height = 0.1), 
+             alpha = 0.5) +
+  scale_color_manual(values = c("Female" = "#F8766D", "Male" = "#00BFC4")) +
+  labs(x = "Sqrt Child Care Duration",
+       y = "Sqrt Household Task Duration",
+       title = "Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender",
+       color = NULL) +
+  theme_minimal(base_size = 13) +
+  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
 
-plot_11 <- plot(jitter(data$sqrt_child_care_duration, factor = 0.5), 
-                jitter(data$sqrt_household_task_duration, factor = 0.5),
-                col = adjustcolor(gender_colors[data$tesex], alpha.f = 0.5),
-                pch = 16,
-                # cex = 0.7,
-                xlab = "Sqrt Child Care Duration",
-                ylab = "Sqrt Household Task Duration",
-                main = "Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender")
+# Individual years
+for (yr in 2010:2019) {
+  data_yr <- data[data$year == yr, ]
+  
+  p <- ggplot(data_yr, aes(x = sqrt_child_care_duration, 
+                           y = sqrt_household_task_duration, 
+                           color = tesex)) +
+    geom_point(position = position_jitter(width = 0.1, height = 0.1), 
+               alpha = 0.5) +
+    scale_color_manual(values = c("Female" = "#F8766D", "Male" = "#00BFC4")) +
+    labs(x = "Sqrt Child Care Duration",
+         y = "Sqrt Household Task Duration",
+         title = paste("Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender,", yr),
+         color = NULL) +
+    theme_minimal(base_size = 12) +
+    theme(plot.title = element_text(hjust = 0.5), 
+          plot.subtitle = element_text(hjust = 0.5), 
+          legend.position = "bottom")
+  
+  assign(paste0("plot_11_", yr), p)
+}
 
-plot_11 <- legend("topright", 
-                  legend = names(gender_colors), 
-                  col = gender_colors,
-                  pch = 16)
+
+
+
+
+plot_11
+plot_11_2010
+plot_11_2011
+plot_11_2012
+plot_11_2013
+plot_11_2014
+plot_11_2015
+plot_11_2016
+plot_11_2017
+plot_11_2018
+plot_11_2019
+
