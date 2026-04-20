@@ -30,6 +30,7 @@ FinalProjectPoster.pdf: poster summarizing final project process and findings
 
 
 ** Key Findings
+
 Figures show that the gender gaps in time spent on household tasks and child care remained relatively steady throughout the 2010s
 
 F-statistics show that gender, time, and their interaction meaningfully explain variation in child care duration and household tasks duration
