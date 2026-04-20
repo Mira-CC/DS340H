@@ -16,6 +16,7 @@ library(maps)
 library(plotly)
 library(htmlwidgets)
 library(forcats)
+library(ggrepel)
 
 setwd("/Users/mirachandriani/Desktop/*WellesleyClasses/DS340H/FinalProject")
 
@@ -244,7 +245,35 @@ employed_colors <- c("Employed" = "#E69F00", "Unemployed" = "#00BFC4")
 income_colors   <- c("Income <$100k" = "#CC79A7", "Income >$100k" = "#FF7F00")
 all_colors <- c(race_colors, employed_colors, income_colors)
 
-# Plot (child care)
+# Helper to get the loess-smoothed y value at the last x point
+get_smooth_endpoint <- function(df, x_col, y_col, group_col, span = 0.3) {
+  df %>%
+    group_by(across(all_of(group_col))) %>%
+    arrange(across(all_of(x_col))) %>%
+    group_modify(~ {
+      x_num <- as.numeric(.x[[x_col]])
+      y     <- .x[[y_col]]
+      fit   <- loess(y ~ x_num, span = span)
+      last_x <- max(x_num)
+      pred   <- predict(fit, newdata = data.frame(x_num = last_x))
+      tibble(month = as.Date(last_x, origin = "1970-01-01"), smoothed_y = pred)
+    }) %>%
+    ungroup()
+}
+
+# Getting endpoints (to label splines) for plot 3
+race_endpoints <- get_smooth_endpoint(childcare_race_diff,     "month", "difference", "race")
+employed_endpoints <- get_smooth_endpoint(childcare_employed_diff,  "month", "difference", "group") %>% rename(race = group)
+income_endpoints   <- get_smooth_endpoint(childcare_income_diff,    "month", "difference", "income_group") %>% rename(race = income_group)
+all_endpoints <- bind_rows(race_endpoints, employed_endpoints, income_endpoints)
+
+# Getting endpoints (to label splines) for plot 4
+race_endpoints_4 <- get_smooth_endpoint(household_task_race_diff, "month", "difference", "race")
+employed_endpoints_4 <- get_smooth_endpoint(household_employed_diff, "month", "difference", "group") %>% rename(race = group)
+income_endpoints_4 <- get_smooth_endpoint(household_income_diff, "month", "difference", "income_group") %>% rename(race = income_group)
+all_endpoints_4 <- bind_rows(race_endpoints_4, employed_endpoints_4, income_endpoints_4)
+
+# Plot
 plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = race)) +
   geom_line(alpha = 0.4) +
   geom_line(data = childcare_employed_diff, aes(x = month, y = difference, color = group), alpha = 0.4) +
@@ -253,15 +282,39 @@ plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = rac
   geom_smooth(data = childcare_employed_diff, aes(x = month, y = difference, color = group), se = FALSE, method = "loess", span = 0.3) +
   geom_smooth(data = childcare_income_diff, aes(x = month, y = difference, color = income_group), se = FALSE, method = "loess", span = 0.3) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  geom_text_repel(
+    data = all_endpoints,
+    aes(x = month, y = smoothed_y, label = race, color = race),
+    direction        = "y",
+    hjust            = 0,
+    nudge_x          = 30,
+    segment.size     = 0.3,
+    segment.color    = "grey50",
+    segment.linetype = "dotted",
+    box.padding      = 0.4,
+    force            = 2,
+    show.legend      = FALSE
+  ) +
   scale_color_manual(values = all_colors) +
-  scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
-  labs(title = "Gender Gap in Child Care Time by Race Over Time",
-       subtitle = "Positive Values = Mothers Spend More Time",
-       x = "Month",
-       y = "Gender Difference in Daily Child Care Minutes\n(Mother - Father)",
-       color = NULL) +
-  theme_minimal(base_size = 13) +
-  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
+  scale_x_date(
+    breaks  = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"),
+    date_labels = "%Y",
+    expand  = expansion(mult = c(0.02, 0.18))
+  ) +
+  labs(
+    title    = "Gender Gap in Child Care Time by Demographic Over Time",
+    subtitle = "Positive Values = Mothers Spend More Time",
+    x        = "Year",
+    y        = "Gender Difference in Daily Child Care Minutes\n(Mother - Father)",
+    color    = NULL
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title    = element_text(hjust = 0.5),
+    plot.subtitle = element_text(hjust = 0.5),
+    legend.position = "none"
+  )
+plot_3
 
 # Plot (household tasks)
 plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color = race)) +
@@ -272,15 +325,39 @@ plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color 
   geom_smooth(data = household_employed_diff, aes(x = month, y = difference, color = group), se = FALSE, method = "loess", span = 0.3) +
   geom_smooth(data = household_income_diff, aes(x = month, y = difference, color = income_group), se = FALSE, method = "loess", span = 0.3) +
   geom_hline(yintercept = 0, linetype = "dashed", color = "black") +
+  geom_text_repel(
+    data = all_endpoints_4,
+    aes(x = month, y = smoothed_y, label = race, color = race),
+    direction        = "y",
+    hjust            = 0,
+    nudge_x          = 30,
+    segment.size     = 0.3,
+    segment.color    = "grey50",
+    segment.linetype = "dotted",
+    box.padding      = 0.4,
+    force            = 2,
+    show.legend      = FALSE
+  ) +
   scale_color_manual(values = all_colors) +
-  scale_x_date(breaks = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"), date_labels = "%Y") +
-  labs(title = "Gender Gap in Time Spent on Household Tasks by Race Over Time",
-       subtitle = "Positive Values = Mothers Spend More Time",
-       x = "Month",
-       y = "Gender Difference in Minutes of Daily Household Tasks\n(Mother - Father)",
-       color = NULL) +
-  theme_minimal(base_size = 13) +
-  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
+  scale_x_date(
+    breaks      = seq(as.Date("2010-01-01"), as.Date("2020-01-01"), by = "year"),
+    date_labels = "%Y",
+    expand      = expansion(mult = c(0.02, 0.18))
+  ) +
+  labs(
+    title    = "Gender Gap in Time Spent on Household Tasks by Demographic Over Time",
+    subtitle = "Positive Values = Mothers Spend More Time",
+    x        = "Year",
+    y        = "Gender Difference in Minutes of Daily Household Tasks\n(Mother - Father)",
+    color    = NULL
+  ) +
+  theme_minimal(base_size = 15) +
+  theme(
+    plot.title      = element_text(hjust = 0.5),
+    plot.subtitle   = element_text(hjust = 0.5),
+    legend.position = "none"
+  )
+plot_4
 
 ### Visual 5 ###################################################################
 
@@ -419,12 +496,15 @@ make_violin_plot <- function(data, y_var, title, y_label) {
   }
   
   p <- p %>% layout(
+    font = list(size = 16),
+    margin = list(t = 50),
     title = list(text = title, x = 0.5),
     yaxis = list(title = y_label),
     xaxis = list(title = "Years", categoryorder = "array",
                  categoryarray = year_groups),
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.1)
   )
+  
   
   return(p)
 }
@@ -433,11 +513,13 @@ make_violin_plot <- function(data, y_var, title, y_label) {
 plot_8 <- make_violin_plot(violin_data, "child_care_duration",
                  "Distribution of Daily Child Care Duration by Year and Gender",
                  "Daily Child Care Duration (Minutes)")
+plot_8
 
 # Plot (household tasks)
 plot_9 <- make_violin_plot(violin_data, "household_task_duration",
                  "Distribution of Daily Household Task Duration by Year and Gender",
                  "Daily Household Task Duration (Minutes)")
+plot_9
 
 # Saving plots
 saveWidget(plot_8, "plot8.html")
