@@ -706,10 +706,6 @@ for (yr in 2010:2019) {
   assign(paste0("plot_11_", yr), p)
 }
 
-
-
-
-
 plot_11
 plot_11_2010
 plot_11_2011
