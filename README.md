@@ -1,7 +1,6 @@
 # The Gender Gap in Household Tasks and Child Care Over Time
 ### by Mira Chandriani
-#### Wellesley College
-#### Data Science Capstone Spring 2026 Final Project
+#### Wellesley College, Data Science Capstone Spring 2026 Final Project
 
 ---
 
