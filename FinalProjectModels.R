@@ -167,6 +167,7 @@ prediction_plot <- ggplot(combined_preds,
   geom_point(size = 3) +
   geom_line(alpha = 0.6) +
   scale_x_continuous(breaks = 2010:2019) +
+  expand_limits(y = 0) +
   scale_color_manual(values = c("Male" = "#00BFC4", "Female" = "#F8766D")) +
   scale_linetype_manual(values = c("Household Tasks (Model 1)" = "dashed", "Child Care (Model 3)" = "dotted")) +
   scale_shape_manual(values = c("Household Tasks (Model 1)" = 15, "Child Care (Model 3)" = 17)) +
