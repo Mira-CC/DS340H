@@ -5,7 +5,7 @@
 ---
 
 ## Project Overview
-Women continue to bear a disproportionate share of unpaid household labor and child care, despite gender equality progress in the workplace. In this project, I examine how the gender gap in time spent on unpaid household tasks and primary child care changed between 2010 and 2019, specifically within heterosexual two-parent households with at least one child under age 18. 
+Women continue to bear a disproportionate share of unpaid household work and child care despite workplace gender equality progress. In this project, I examine how the gender gap in time spent on unpaid household tasks and primary child care changed between 2010 and 2019, specifically within heterosexual two-parent households with at least one child under age 18. 
 
 ---
 
@@ -37,6 +37,6 @@ I analyze ATUS respondent, activity, roster, and CPS datasets from 2010-2019. Th
 
 - Gender alone is a meaningful predictor of time spent on household tasks and child care, but the interaction between gender and time is not significant. 
 - The gender gaps in time spent on household tasks and child care remained relatively steady throughout the 2010s, but the gaps are negligible. 
-- On average, women spend 3.80 more minutes daily on household tasks than men, controlling for covariates. The largest gender gap over time occurs for Asian respondents. 
-- On average, women spend 2.26 more minutes daily on child care than men, controlling for covariates. The largest gender gap over time occurs for unemployed respondents. 
+- On average, women spend 3.80 more minutes daily on household tasks than men, controlling for covariates. The largest gender gap over time occurs for Asian main respondents. 
+- On average, women spend 2.26 more minutes daily on child care than men, controlling for covariates. The largest gender gap over time occurs for unemployed main respondents. 
 - There is a slight narrowing of the gender gap beginning in mid-2018. 
