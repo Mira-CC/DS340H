@@ -293,6 +293,7 @@ plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = rac
     segment.linetype = "dotted",
     box.padding      = 0.4,
     force            = 2,
+    size             = 7,
     show.legend      = FALSE
   ) +
   scale_color_manual(values = all_colors) +
@@ -302,16 +303,14 @@ plot_3 <- ggplot(childcare_race_diff, aes(x = month, y = difference, color = rac
     expand  = expansion(mult = c(0.02, 0.18))
   ) +
   labs(
-    title    = "Gender Gap in Child Care Time by Demographic Over Time",
+    title    = "Figure 5: Gender Gap in Time Spent on Child Care by Demographic Over Time",
     subtitle = "Positive Values = Mothers Spend More Time",
     x        = "Year",
     y        = "Gender Difference in Daily Child Care Minutes\n(Mother - Father)",
     color    = NULL
   ) +
-  theme_minimal(base_size = 15) +
+  theme_minimal(base_size = 25) +
   theme(
-    plot.title    = element_text(hjust = 0.5),
-    plot.subtitle = element_text(hjust = 0.5),
     legend.position = "none"
   )
 plot_3
@@ -336,6 +335,7 @@ plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color 
     segment.linetype = "dotted",
     box.padding      = 0.4,
     force            = 2,
+    size             = 7,
     show.legend      = FALSE
   ) +
   scale_color_manual(values = all_colors) +
@@ -345,19 +345,49 @@ plot_4 <- ggplot(household_task_race_diff, aes(x = month, y = difference, color 
     expand      = expansion(mult = c(0.02, 0.18))
   ) +
   labs(
-    title    = "Gender Gap in Time Spent on Household Tasks by Demographic Over Time",
+    title    = "Figure 3: Gender Gap in Time Spent on Household Tasks by Demographic Over Time",
     subtitle = "Positive Values = Mothers Spend More Time",
     x        = "Year",
-    y        = "Gender Difference in Minutes of Daily Household Tasks\n(Mother - Father)",
+    y        = "Gender Difference in Daily Household Tasks Minutes\n(Mother - Father)",
     color    = NULL
   ) +
-  theme_minimal(base_size = 15) +
+  theme_minimal(base_size = 25) +
   theme(
-    plot.title      = element_text(hjust = 0.5),
-    plot.subtitle   = element_text(hjust = 0.5),
     legend.position = "none"
   )
 plot_4
+
+### Visuals 4 and 5 Diagnostic Table ###########################################
+
+# Race subgroups
+race_n <- data %>%
+  mutate(
+    race = fct_collapse(race, "Multiracial/Other" = c("Multiracial", "Other")),
+    month = floor_date(tudiarydate, "month")
+  ) %>%
+  filter(race != "Multiracial/Other") %>%
+  group_by(month, race, tesex) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  pivot_wider(names_from = tesex, values_from = n, values_fill = 0) %>%
+  rename(n_female = Female, n_male = Male)
+
+# Employment subgroup
+employed_n <- data %>%
+  mutate(month = floor_date(tudiarydate, "month"),
+         group = ifelse(employed == 1, "Employed", "Unemployed")) %>%
+  group_by(month, group, tesex) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  pivot_wider(names_from = tesex, values_from = n, values_fill = 0) %>%
+  rename(n_female = Female, n_male = Male)
+
+# Income subgroups
+income_n <- data %>%
+  mutate(month = floor_date(tudiarydate, "month"),
+         income_group = ifelse(income_level %in% c(1, 2, 3), "Income <$100k", "Income >$100k")) %>%
+  group_by(month, income_group, tesex) %>%
+  summarise(n = n(), .groups = "drop") %>%
+  pivot_wider(names_from = tesex, values_from = n, values_fill = 0) %>%
+  rename(n_female = Female, n_male = Male)
 
 ### Visual 5 ###################################################################
 
@@ -496,12 +526,12 @@ make_violin_plot <- function(data, y_var, title, y_label) {
   }
   
   p <- p %>% layout(
-    font = list(size = 16),
-    margin = list(t = 50),
-    title = list(text = title, x = 0.5),
+    font = list(size = 29),
+    margin = list(t = 100, b = 75, l = 100, r = 30),
+    title = list(text = title, x = 0.07, xanchor = "left"),
     yaxis = list(title = y_label),
-    xaxis = list(title = "Years", categoryorder = "array",
-                 categoryarray = year_groups),
+    xaxis = list(title = list(text = "Years", standoff = 10), categoryorder = "array",
+                 categoryarray = year_groups), 
     legend = list(orientation = "h", x = 0.5, xanchor = "center", y = -0.1)
   )
   
@@ -511,13 +541,13 @@ make_violin_plot <- function(data, y_var, title, y_label) {
 
 # Plot (child care)
 plot_8 <- make_violin_plot(violin_data, "child_care_duration",
-                 "Distribution of Daily Child Care Duration by Year and Gender",
+                 "Figure 4: Distribution of Daily Child Care Duration by Year and Gender",
                  "Daily Child Care Duration (Minutes)")
 plot_8
 
 # Plot (household tasks)
 plot_9 <- make_violin_plot(violin_data, "household_task_duration",
-                 "Distribution of Daily Household Task Duration by Year and Gender",
+                 "  Figure 2: Distribution of Daily Household Task Duration by Year and Gender",
                  "Daily Household Task Duration (Minutes)")
 plot_9
 
@@ -677,12 +707,12 @@ plot_11 <- ggplot(data, aes(x = sqrt_child_care_duration,
   geom_point(position = position_jitter(width = 0.1, height = 0.1), 
              alpha = 0.5) +
   scale_color_manual(values = c("Female" = "#F8766D", "Male" = "#00BFC4")) +
-  labs(x = "Sqrt Child Care Duration",
-       y = "Sqrt Household Task Duration",
-       title = "Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender",
+  labs(x = "Sqrt Child Care Duration (Minutes)",
+       y = "Sqrt Household Task Duration (Minutes)",
+       title = "Figure 1: Sqrt Child Care vs. Household Tasks Duration by Gender",
        color = NULL) +
-  theme_minimal(base_size = 13) +
-  theme(plot.title = element_text(hjust = 0.5), plot.subtitle = element_text(hjust = 0.5), legend.position = "bottom")
+  theme_minimal(base_size = 20) +
+  theme(legend.position = "bottom")
 
 # Individual years
 for (yr in 2010:2019) {
@@ -694,14 +724,12 @@ for (yr in 2010:2019) {
     geom_point(position = position_jitter(width = 0.1, height = 0.1), 
                alpha = 0.5) +
     scale_color_manual(values = c("Female" = "#F8766D", "Male" = "#00BFC4")) +
-    labs(x = "Sqrt Child Care Duration",
+    labs(x = "Plot 1: Sqrt Child Care Duration",
          y = "Sqrt Household Task Duration",
-         title = paste("Sqrt Child Care Duration vs. Sqrt Household Tasks Duration by Gender,", yr),
+         title = paste("Sqrt Child Care vs. Household Tasks Duration by Gender,", yr),
          color = NULL) +
     theme_minimal(base_size = 12) +
-    theme(plot.title = element_text(hjust = 0.5), 
-          plot.subtitle = element_text(hjust = 0.5), 
-          legend.position = "bottom")
+    theme(legend.position = "bottom")
   
   assign(paste0("plot_11_", yr), p)
 }
